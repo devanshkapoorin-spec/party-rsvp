@@ -113,11 +113,11 @@
         <div class="success-icon">${msg.icon}</div>
         <h2>${title}</h2>
         <p>${msg.sub}</p>
-        ${attending ? '<div class="success-sub-icons">🎉 🥂 ✨ 🎊</div>' : '<div class="success-sub-icons">💌 🫶</div>'}
+        ${attending ? '<div class="success-sub-icons">🎉 🥂 ✨ 🎊 💃 🕺</div>' : '<div class="success-sub-icons">💌 🫶</div>'}
       </div>
     `;
 
-    if (attending) launchConfetti();
+    if (attending) celebrate(document.getElementById('success-box'));
   }
 
   function renderEvent(ev, isDrinking) {
@@ -180,6 +180,7 @@
     `;
 
     loadAttendees();
+    startFormHype(document.getElementById('rsvp-form'));
 
     document.getElementById('rsvp-form').addEventListener('submit', async (e) => {
       e.preventDefault();
