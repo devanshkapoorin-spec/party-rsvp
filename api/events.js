@@ -1,6 +1,8 @@
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}`;
+const EVENTS_TABLE = 'tblxtlXhOuC7yvepp';
+const RSVPS_TABLE = 'tblkOBkdJFPbHR5Ie';
 
 const headers = {
   'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -17,7 +19,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const response = await fetch(
-        `${BASE_URL}/Events?sort[0][field]=Date&sort[0][direction]=asc`,
+        `${BASE_URL}/${EVENTS_TABLE}?sort[0][field]=date&sort[0][direction]=asc`,
         { headers }
       );
       const data = await response.json();
@@ -31,17 +33,17 @@ export default async function handler(req, res) {
     if (!name || !date) return res.status(400).json({ error: 'Name and date required' });
 
     try {
-      const response = await fetch(`${BASE_URL}/Events`, {
+      const response = await fetch(`${BASE_URL}/${EVENTS_TABLE}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           records: [{
             fields: {
-              Name: name,
-              Date: date,
-              Location: location || '',
-              Description: description || '',
-              'Drinking Event': drinkingEvent || false,
+              'name': name,
+              'date': date,
+              'location': location || '',
+              'description': description || '',
+              'drinking event': drinkingEvent || false,
             }
           }]
         })

@@ -1,6 +1,7 @@
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}`;
+const RSVPS_TABLE = 'tblkOBkdJFPbHR5Ie';
 
 const headers = {
   'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -22,15 +23,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`${BASE_URL}/RSVPs`, {
+    const response = await fetch(`${BASE_URL}/${RSVPS_TABLE}`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         records: [{
           fields: {
-            'Guest Name': guestName,
-            Event: [eventId],
-            Attending: attending ? 'Yes' : 'No',
+            'guest name': guestName,
+            'event': [eventId],
+            'attending': attending ? 'Yes' : 'No',
             'Plus One': plusOne || false,
             'Drink Preference': drinkPreference || '',
           }
