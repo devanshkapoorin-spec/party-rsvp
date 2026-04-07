@@ -252,6 +252,28 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-outline-pink:hover { background: var(--pink-dim); }
 
 /* ── EVENT DETAIL ── */
+.event-deco {
+  font-size: 28px;
+  letter-spacing: 8px;
+  margin-bottom: 16px;
+  display: block;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.event-drink-badge {
+  display: inline-block;
+  margin-top: 14px;
+  background: var(--pink-dim);
+  color: var(--pink);
+  border: 1px solid var(--pink);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
 .event-header { margin-bottom: 48px; }
 .event-date-loc {
   display: flex;
@@ -270,10 +292,26 @@ textarea { resize: vertical; min-height: 80px; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 
 /* ── SUCCESS ── */
-.success-box { text-align: center; padding: 60px 24px; }
-.success-icon { font-size: 52px; margin-bottom: 20px; }
-.success-box h2 { margin-bottom: 8px; }
-.success-box p { color: var(--muted); font-size: 15px; }
+.success-box {
+  text-align: center;
+  padding: 60px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  margin-top: 16px;
+}
+.success-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  display: block;
+  animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes pop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.success-box h2 { margin-bottom: 10px; font-size: 22px; }
+.success-box p { color: var(--muted); font-size: 15px; line-height: 1.6; }
 
 /* ── ATTENDEES ── */
 .attendees-section { margin-top: 48px; }

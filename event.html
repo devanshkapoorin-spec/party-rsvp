@@ -86,15 +86,79 @@
     }
   }
 
-  function renderSuccess(name) {
+  const yesMessages = [
+    { icon: '🎉', title: `You're on the list, NAME!`, sub: `The party just got better. See you there. 🔥` },
+    { icon: '🥳', title: `NAME is coming!`, sub: `Locked in. Don't even think about backing out now. 😤` },
+    { icon: '✨', title: `It's a date, NAME.`, sub: `You're going to have the best time. We promise.` },
+    { icon: '🙌', title: `YES! NAME is in!`, sub: `This is going to be a night to remember.` },
+    { icon: '💃', title: `NAME, you're confirmed!`, sub: `See you on the dance floor. Don't be late. 👀` },
+    { icon: '🎊', title: `NAME just secured their spot!`, sub: `The guest list just got a whole lot better.` },
+  ];
+
+  const noMessages = [
+    { icon: '😢', title: `We'll miss you, NAME.`, sub: `We'll send pics so you can live vicariously. 📸` },
+    { icon: '💔', title: `Sad to hear it, NAME.`, sub: `Next time, no excuses. You owe us one.` },
+    { icon: '👀', title: `Noted, NAME.`, sub: `We'll be thinking of you while we're having the time of our lives.` },
+    { icon: '😔', title: `Bummer! NAME can't make it.`, sub: `There's always next time. We'll hold you to it.` },
+    { icon: '🫶', title: `You'll be missed, NAME.`, sub: `Hope everything's okay. We'll save you a drink. 🍹` },
+  ];
+
+  function renderSuccess(name, attending) {
+    const list = attending ? yesMessages : noMessages;
+    const msg = list[Math.floor(Math.random() * list.length)];
+    const title = msg.title.replace('NAME', name);
+
+    if (attending) launchConfetti();
+
     document.getElementById('page-content').innerHTML = `
-      <div class="success-box">
-        <div class="success-icon">🎉</div>
-        <h2>You're on the list, ${name}!</h2>
-        <p>Can't wait to see you there 🥳</p>
-        <a href="index.html" class="btn btn-ghost" style="display:inline-flex;margin-top:32px;">Back to events</a>
+      <div class="success-box" id="success-box">
+        <div class="success-icon">${msg.icon}</div>
+        <h2>${title}</h2>
+        <p>${msg.sub}</p>
       </div>
     `;
+  }
+
+  function launchConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'confetti-canvas';
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#ff2d6b','#ff6b9d','#ffffff','#ffb3c8','#ff4d7d','#ffe0ea'];
+    const pieces = Array.from({ length: 120 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * -canvas.height,
+      r: Math.random() * 8 + 4,
+      d: Math.random() * 80 + 40,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 10,
+      tiltAngle: 0,
+      tiltSpeed: Math.random() * 0.1 + 0.05,
+    }));
+
+    let frame = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        p.tiltAngle += p.tiltSpeed;
+        p.y += (Math.cos(frame / 20) + 2 + p.r / 2) * 1.2;
+        p.tilt = Math.sin(p.tiltAngle) * 12;
+        ctx.beginPath();
+        ctx.lineWidth = p.r / 2;
+        ctx.strokeStyle = p.color;
+        ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
+        ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+        ctx.stroke();
+      });
+      frame++;
+      if (frame < 200) requestAnimationFrame(draw);
+      else canvas.remove();
+    }
+    draw();
   }
 
   function renderEvent(ev, isDrinking) {
@@ -104,11 +168,15 @@
 
     document.getElementById('page-content').innerHTML = `
       <div class="event-header fade-up">
+        <div class="event-deco">
+          <span>🎈</span><span>✨</span><span>🎊</span>
+        </div>
         <h1>${ev.name}</h1>
         <div class="event-date-loc">
           ${date ? `<span>📅 ${date}</span>` : ''}
           ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
         </div>
+        ${ev['drinking event'] ? `<div class="event-drink-badge">🍹 Drinks event — tell us what you're having</div>` : ''}
         ${ev.description ? `<p class="event-description">${ev.description}</p>` : ''}
       </div>
 
@@ -185,7 +253,7 @@
           body: JSON.stringify({ eventId, guestName, attending, plusOne, drinkPreference }),
         });
         if (!res.ok) throw new Error();
-        renderSuccess(guestName.split(' ')[0]);
+        renderSuccess(guestName.split(' ')[0], attending);
       } catch {
         showToast('Something went wrong. Try again.', true);
         btn.disabled = false;
