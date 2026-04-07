@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Party.</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .admin-gate {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .admin-gate h1 { margin-bottom: 8px; }
+    .admin-gate p { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    .event-selector {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .event-pill {
+      padding: 8px 18px;
+      border-radius: 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .event-pill:hover, .event-pill.active {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--gold-dim);
+    }
+    .stat-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--pink); line-height: 1; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .create-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 28px;
+      margin-bottom: 48px;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="login-gate" class="admin-gate">
+  <h1>Admin<br><em>access.</em></h1>
+  <p>Enter your password to manage events and view RSVPs.</p>
+  <div class="form-group">
+    <input type="password" id="pw-input" placeholder="Password" />
+  </div>
+  <button class="btn btn-primary" onclick="checkPassword()">Enter</button>
+</div>
+
+<!-- ADMIN PANEL (hidden until logged in) -->
+<div id="admin-panel" style="display:none;">
+  <nav>
+    <div class="inner">
+      <a class="nav-logo" href="index.html">
+        <img src="logo.svg" class="logo-mark" alt="" />
+        <div class="logo-wordmark">
+          <span class="logo-main">Party.</span>
+          <span class="logo-sub">RSVP</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Events</a>
+        <a href="#" onclick="logout()">Log out</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <!-- CREATE EVENT -->
+    <div class="admin-section">
+      <h3>Create Event</h3>
+      <div class="create-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ev-name">Event name</label>
+            <input type="text" id="ev-name" placeholder="New Year's Eve Party" />
+          </div>
+          <div class="form-group">
+            <label for="ev-date">Date</label>
+            <input type="date" id="ev-date" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="ev-location">Location</label>
+          <input type="text" id="ev-location" placeholder="House, venue, or address" />
+        </div>
+        <div class="form-group">
+          <label for="ev-desc">Description (optional)</label>
+          <textarea id="ev-desc" placeholder="Dress code, what to bring, vibe…"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="ev-drinking" />
+            <span>This is a drinking event (show drink preference in RSVP)</span>
+          </label>
+        </div>
+        <button class="btn btn-primary" id="create-btn" onclick="createEvent()">Create Event</button>
+      </div>
+    </div>
+
+    <!-- EVENT RSVPS -->
+    <div class="admin-section">
+      <h3>RSVPs</h3>
+
+      <div id="event-pills" class="event-selector">
+        <div class="loading">Loading events…</div>
+      </div>
+
+      <div id="stats-row" class="stat-row" style="display:none;"></div>
+
+      <div id="rsvp-table-wrap">
+        <div class="empty">Select an event to view RSVPs.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    <div class="container">Party. &nbsp;·&nbsp; Admin</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const ADMIN_PASSWORD = 'devansh2026';
+  let allEvents = [];
+  let selectedEventId = null;
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast'; }, 3500);
+  }
+
+  function checkPassword() {
+    const pw = document.getElementById('pw-input').value;
+    if (pw === ADMIN_PASSWORD) {
+      sessionStorage.setItem('admin', '1');
+      document.getElementById('login-gate').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      loadEvents();
+    } else {
+      showToast('Wrong password.', true);
+    }
+  }
+
+  document.getElementById('pw-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPassword();
+  });
+
+  function logout() {
+    sessionStorage.removeItem('admin');
+    location.reload();
+  }
+
+  if (sessionStorage.getItem('admin')) {
+    document.getElementById('login-gate').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    loadEvents();
+  }
+
+  async function loadEvents() {
+    try {
+      const res = await fetch('/api/events');
+      allEvents = await res.json();
+      renderPills();
+    } catch {
+      document.getElementById('event-pills').innerHTML = '<div class="empty">Couldn\'t load events.</div>';
+    }
+  }
+
+  function renderPills() {
+    const pills = document.getElementById('event-pills');
+    if (!allEvents.length) {
+      pills.innerHTML = '<div class="empty">No events yet. Create one above.</div>';
+      return;
+    }
+    pills.innerHTML = allEvents.map(ev => {
+      const date = ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+      return `<div class="event-pill ${selectedEventId === ev.id ? 'active' : ''}" onclick="selectEvent('${ev.id}')">${ev.name}${date ? ' · ' + date : ''}</div>`;
+    }).join('');
+  }
+
+  async function selectEvent(id) {
+    selectedEventId = id;
+    renderPills();
+
+    const wrap = document.getElementById('rsvp-table-wrap');
+    const statsRow = document.getElementById('stats-row');
+    wrap.innerHTML = '<div class="loading">Loading RSVPs…</div>';
+    statsRow.style.display = 'none';
+
+    try {
+      const res = await fetch(`/api/rsvps?eventId=${id}`);
+      const rsvps = await res.json();
+
+      const attending = rsvps.filter(r => r.attending === 'Yes').length;
+      const plusOnes = rsvps.filter(r => r['Plus One']).length;
+
+      statsRow.innerHTML = `
+        <div class="stat-box"><div class="stat-num">${rsvps.length}</div><div class="stat-label">Total RSVPs</div></div>
+        <div class="stat-box"><div class="stat-num">${attending}</div><div class="stat-label">Attending</div></div>
+        <div class="stat-box"><div class="stat-num">${plusOnes}</div><div class="stat-label">Plus ones</div></div>
+        <div class="stat-box"><div class="stat-num">${attending + plusOnes}</div><div class="stat-label">Total heads</div></div>
+      `;
+      statsRow.style.display = 'flex';
+
+      const ev = allEvents.find(e => e.id === id);
+      const isDrinking = ev?.['drinking event'];
+
+      if (!rsvps.length) {
+        wrap.innerHTML = '<div class="empty">No RSVPs yet for this event.</div>';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Attending</th>
+              <th>+1</th>
+              ${isDrinking ? '<th>Drink</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            ${rsvps.map(r => `
+              <tr>
+                <td>${r['guest name'] || '—'}</td>
+                <td><span class="badge ${r.attending === 'Yes' ? 'badge-yes' : 'badge-no'}">${r.attending || '—'}</span></td>
+                <td>${r['Plus One'] ? '✓' : '—'}</td>
+                ${isDrinking ? `<td>${r['Drink Preference'] || '—'}</td>` : ''}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch {
+      wrap.innerHTML = '<div class="empty">Couldn\'t load RSVPs.</div>';
+    }
+  }
+
+  async function createEvent() {
+    const btn = document.getElementById('create-btn');
+    const name = document.getElementById('ev-name').value.trim();
+    const date = document.getElementById('ev-date').value;
+    const location = document.getElementById('ev-location').value.trim();
+    const description = document.getElementById('ev-desc').value.trim();
+    const drinkingEvent = document.getElementById('ev-drinking').checked;
+
+    if (!name || !date) {
+      showToast('Name and date are required.', true);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, date, location, description, drinkingEvent }),
+      });
+      if (!res.ok) throw new Error();
+      showToast('Event created!');
+      document.getElementById('ev-name').value = '';
+      document.getElementById('ev-date').value = '';
+      document.getElementById('ev-location').value = '';
+      document.getElementById('ev-desc').value = '';
+      document.getElementById('ev-drinking').checked = false;
+      await loadEvents();
+    } catch {
+      showToast('Failed to create event.', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Event';
+    }
+  }
+</script>
+
+</body>
+</html>

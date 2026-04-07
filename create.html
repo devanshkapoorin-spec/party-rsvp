@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Host an Event — Party.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a class="nav-logo" href="index.html">
+      <img src="logo.svg" class="logo-mark" alt="" />
+      <div class="logo-wordmark">
+        <span class="logo-main">Party.</span>
+        <span class="logo-sub">RSVP</span>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">All events</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div id="page-content">
+    <h3>New event</h3>
+    <h1>Host something<br><em>worth attending.</em></h1>
+    <p class="page-subtitle" style="margin-bottom:48px;">Fill in the details. We'll give you a link to share.</p>
+
+    <form id="create-form" class="fade-up">
+      <div class="form-group">
+        <label for="ev-name">Event name *</label>
+        <input type="text" id="ev-name" placeholder="Dinner at Mine, Rooftop Night, The Annual…" required />
+      </div>
+
+      <div class="form-group">
+        <label for="ev-date">Date *</label>
+        <input type="date" id="ev-date" required />
+      </div>
+
+      <div class="form-group">
+        <label for="ev-location">Location</label>
+        <input type="text" id="ev-location" placeholder="Address, venue, or just a neighbourhood" />
+      </div>
+
+      <div class="form-group">
+        <label for="ev-desc">A note to guests</label>
+        <textarea id="ev-desc" placeholder="Dress code, what to expect, what to bring…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-row">
+          <input type="checkbox" id="ev-drinking" />
+          <span>Ask guests for their drink preference</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="create-btn">Create event →</button>
+    </form>
+  </div>
+
+</div>
+
+<div class="page-footer">
+  <div class="container">Party. &nbsp;·&nbsp; RSVP</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast'; }, 3500);
+  }
+
+  document.getElementById('create-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('create-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    const name = document.getElementById('ev-name').value.trim();
+    const date = document.getElementById('ev-date').value;
+    const location = document.getElementById('ev-location').value.trim();
+    const description = document.getElementById('ev-desc').value.trim();
+    const drinkingEvent = document.getElementById('ev-drinking').checked;
+
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, date, location, description, drinkingEvent }),
+      });
+      if (!res.ok) throw new Error();
+      const ev = await res.json();
+      const link = `${window.location.origin}/event.html?id=${ev.id}`;
+      showSuccess(ev.name, link, ev.id);
+    } catch {
+      showToast('Something went wrong. Try again.', true);
+      btn.disabled = false;
+      btn.textContent = 'Create event →';
+    }
+  });
+
+  function showSuccess(name, link, id) {
+    document.getElementById('page-content').innerHTML = `
+      <div class="fade-up">
+        <div class="success-mark" style="text-align:left;font-size:40px;margin-bottom:20px;">✦</div>
+        <h3>Your event is live</h3>
+        <h1>${name}</h1>
+        <p class="page-subtitle" style="margin-bottom:32px;">Share this link with your guests.</p>
+        <div class="share-link">
+          <span>${link}</span>
+          <button class="copy-btn" onclick="copyLink('${link}')">Copy</button>
+        </div>
+        <div class="action-links">
+          <a href="event.html?id=${id}" class="btn btn-primary" style="width:auto;">View event page →</a>
+          <a href="create.html" class="btn btn-ghost">Host another</a>
+        </div>
+      </div>
+    `;
+  }
+
+  function copyLink(link) {
+    navigator.clipboard.writeText(link).then(() => showToast('Link copied.'));
+  }
+</script>
+
+</body>
+</html>

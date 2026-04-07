@@ -1,0 +1,8 @@
+{
+  "framework": null,
+  "functions": {
+    "api/events.js": { "maxDuration": 10 },
+    "api/rsvp.js": { "maxDuration": 10 },
+    "api/rsvps.js": { "maxDuration": 10 }
+  }
+}

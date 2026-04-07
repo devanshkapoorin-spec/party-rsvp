@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RSVP — Party.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a class="nav-logo" href="index.html">
+      <img src="logo.svg" class="logo-mark" alt="" />
+      <div class="logo-wordmark">
+        <span class="logo-main">Party.</span>
+        <span class="logo-sub">RSVP</span>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">← All events</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div id="page-content">
+    <div class="loading">Loading event…</div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <div class="container">Party. &nbsp;·&nbsp; RSVP</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get('id');
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast'; }, 3500);
+  }
+
+  async function loadAttendees() {
+    try {
+      const res = await fetch(`/api/rsvps?eventId=${eventId}`);
+      const rsvps = await res.json();
+      const attending = rsvps.filter(r => r.attending === 'Yes');
+      const section = document.getElementById('attendees-section');
+      if (!section) return;
+
+      if (!attending.length) {
+        section.innerHTML = `
+          <hr class="divider" />
+          <div class="attendees-section">
+            <h3>🎈 Who's coming</h3>
+            <div class="empty" style="padding:20px 0;text-align:left;">No RSVPs yet — be the first! 🙋</div>
+          </div>`;
+        return;
+      }
+
+      const totalHeads = attending.reduce((sum, r) => sum + 1 + (r['Plus One'] ? 1 : 0), 0);
+
+      section.innerHTML = `
+        <hr class="divider" />
+        <div class="attendees-section">
+          <h3>🎉 Who's coming</h3>
+          <div class="attendee-count"><span>${attending.length}</span> confirmed · <span>${totalHeads}</span> total heads</div>
+          <div class="attendee-list">
+            ${attending.map(r => `
+              <div class="attendee-row">
+                <span class="attendee-name">🙋 ${r['guest name'] || 'Guest'}</span>
+                <div class="attendee-meta">
+                  ${r['Plus One'] ? '<span>👫 +1</span>' : ''}
+                  ${r['Drink Preference'] ? `<span>🍹 ${r['Drink Preference']}</span>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    } catch {
+      // non-critical
+    }
+  }
+
+  function renderSuccess(name) {
+    document.getElementById('page-content').innerHTML = `
+      <div class="success-box">
+        <div class="success-icon">🎉</div>
+        <h2>You're on the list, ${name}!</h2>
+        <p>Can't wait to see you there 🥳</p>
+        <a href="index.html" class="btn btn-ghost" style="display:inline-flex;margin-top:32px;">Back to events</a>
+      </div>
+    `;
+  }
+
+  function renderEvent(ev, isDrinking) {
+    const date = ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }) : '';
+
+    document.getElementById('page-content').innerHTML = `
+      <div class="event-header fade-up">
+        <h1>${ev.name}</h1>
+        <div class="event-date-loc">
+          ${date ? `<span>📅 ${date}</span>` : ''}
+          ${ev.location ? `<span>📍 ${ev.location}</span>` : ''}
+        </div>
+        ${ev.description ? `<p class="event-description">${ev.description}</p>` : ''}
+      </div>
+
+      <hr class="divider" />
+
+      <form id="rsvp-form">
+        <div class="form-group">
+          <label for="guest-name">Your name</label>
+          <input type="text" id="guest-name" placeholder="First and last name" required />
+        </div>
+
+        <div class="form-group">
+          <label>Will you attend?</label>
+          <div class="attend-toggle">
+            <input type="radio" name="attending" id="att-yes" value="yes" required />
+            <label for="att-yes">I'll be there</label>
+            <input type="radio" name="attending" id="att-no" value="no" />
+            <label for="att-no">Can't make it</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-row">
+            <input type="checkbox" id="plus-one" />
+            <span>I'm bringing a guest</span>
+          </label>
+        </div>
+
+        ${isDrinking ? `
+        <div class="form-group">
+          <label for="drink-pref">Drink preference</label>
+          <input type="text" id="drink-pref" placeholder="e.g. Champagne, Negroni, Non-alcoholic…" />
+        </div>
+        ` : ''}
+
+        <button type="submit" class="btn btn-primary mt-16" id="submit-btn">
+          Confirm my place
+        </button>
+      </form>
+
+      <div id="attendees-section"></div>
+    `;
+
+    loadAttendees();
+
+    document.getElementById('rsvp-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+
+      const guestName = document.getElementById('guest-name').value.trim();
+      const attending = document.querySelector('input[name="attending"]:checked')?.value === 'yes';
+      const plusOne = document.getElementById('plus-one').checked;
+      const drinkPreference = isDrinking ? (document.getElementById('drink-pref')?.value.trim() || '') : '';
+
+      if (!guestName) {
+        showToast('Please enter your name.', true);
+        btn.disabled = false;
+        btn.textContent = 'Confirm my place';
+        return;
+      }
+      if (!document.querySelector('input[name="attending"]:checked')) {
+        showToast('Please select your attendance.', true);
+        btn.disabled = false;
+        btn.textContent = 'Confirm my place';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ eventId, guestName, attending, plusOne, drinkPreference }),
+        });
+        if (!res.ok) throw new Error();
+        renderSuccess(guestName.split(' ')[0]);
+      } catch {
+        showToast('Something went wrong. Try again.', true);
+        btn.disabled = false;
+        btn.textContent = 'Confirm my place';
+      }
+    });
+  }
+
+  async function init() {
+    if (!eventId) {
+      document.getElementById('page-content').innerHTML = '<div class="empty">No event selected.</div>';
+      return;
+    }
+    try {
+      const res = await fetch('/api/events');
+      const events = await res.json();
+      const ev = events.find(e => e.id === eventId);
+      if (!ev) {
+        document.getElementById('page-content').innerHTML = '<div class="empty">Event not found.</div>';
+        return;
+      }
+      document.title = `${ev.name} — Party.`;
+      renderEvent(ev, ev['drinking event']);
+    } catch {
+      document.getElementById('page-content').innerHTML = '<div class="empty">Couldn\'t load event. Try again.</div>';
+    }
+  }
+
+  init();
+</script>
+
+</body>
+</html>
