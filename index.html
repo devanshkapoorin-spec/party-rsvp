@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Party. — Party RSVP</title>
   <link rel="stylesheet" href="styles.css" />
+  <title>Party. — RSVP</title>
 </head>
 <body>
 
@@ -29,7 +30,7 @@
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
     <div>
       <h3>Upcoming Events</h3>
-      <h1>You're invited. 🎊</h1>
+      <h1>You're <span class="grad">invited.</span> 🎊</h1>
       <p class="page-subtitle">Pick your event and secure your spot.</p>
     </div>
     <a href="create.html" class="btn btn-outline-pink" style="margin-top:8px;white-space:nowrap;">+ Host an event</a>
@@ -46,7 +47,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
+<script src="party.js"></script>
 <script>
   async function loadEvents() {
     const list = document.getElementById('event-list');

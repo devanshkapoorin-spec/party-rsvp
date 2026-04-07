@@ -32,7 +32,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
+<script src="party.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const eventId = params.get('id');
@@ -108,57 +108,16 @@
     const msg = list[Math.floor(Math.random() * list.length)];
     const title = msg.title.replace('NAME', name);
 
-    if (attending) launchConfetti();
-
     document.getElementById('page-content').innerHTML = `
       <div class="success-box" id="success-box">
         <div class="success-icon">${msg.icon}</div>
         <h2>${title}</h2>
         <p>${msg.sub}</p>
+        ${attending ? '<div class="success-sub-icons">🎉 🥂 ✨ 🎊</div>' : '<div class="success-sub-icons">💌 🫶</div>'}
       </div>
     `;
-  }
 
-  function launchConfetti() {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'confetti-canvas';
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;';
-    document.body.appendChild(canvas);
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const colors = ['#ff2d6b','#ff6b9d','#ffffff','#ffb3c8','#ff4d7d','#ffe0ea'];
-    const pieces = Array.from({ length: 120 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * -canvas.height,
-      r: Math.random() * 8 + 4,
-      d: Math.random() * 80 + 40,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      tilt: Math.random() * 10 - 10,
-      tiltAngle: 0,
-      tiltSpeed: Math.random() * 0.1 + 0.05,
-    }));
-
-    let frame = 0;
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pieces.forEach(p => {
-        p.tiltAngle += p.tiltSpeed;
-        p.y += (Math.cos(frame / 20) + 2 + p.r / 2) * 1.2;
-        p.tilt = Math.sin(p.tiltAngle) * 12;
-        ctx.beginPath();
-        ctx.lineWidth = p.r / 2;
-        ctx.strokeStyle = p.color;
-        ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
-        ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
-        ctx.stroke();
-      });
-      frame++;
-      if (frame < 200) requestAnimationFrame(draw);
-      else canvas.remove();
-    }
-    draw();
+    if (attending) launchConfetti();
   }
 
   function renderEvent(ev, isDrinking) {
